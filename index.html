@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Project Shadow — Sleeping AI</title>
+    <style>
+        :root {
+            --bg-canvas: #F5F5F7;
+            --surface-glass: rgba(245, 245, 247, 0.8);
+            --surface-card: #FFFFFF;
+            --ocean-blue: #0066CC;
+            --ocean-blue-hover: #0052A3;
+            --ocean-tint: rgba(0, 102, 204, 0.05);
+            --border-hairline: rgba(0, 0, 0, 0.08);
+            --border-focus: rgba(0, 102, 204, 0.3);
+            --text-title: #1D1D1F;
+            --text-body: #424245;
+            --text-muted: #86868B;
+            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
+            --transition-slow: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: var(--transition-slow);
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-title);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.015em;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .ambient-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .blur-patch {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.35;
+        }
+
+        .patch-1 {
+            background: rgba(0, 53, 128, 0.8);
+            width: 450px;
+            height: 450px;
+            top: -100px;
+            left: -80px;
+        }
+
+        .patch-2 {
+            background: rgba(198, 12, 48, 0.75);
+            width: 500px;
+            height: 500px;
+            top: 35%;
+            right: -120px;
+        }
+
+        .patch-3 {
+            background: rgba(255, 206, 0, 0.6);
+            width: 400px;
+            height: 400px;
+            bottom: 10%;
+            left: -100px;
+        }
+
+        .patch-4 {
+            background: rgba(71, 143, 205, 0.85);
+            width: 380px;
+            height: 380px;
+            top: 20%;
+            left: 30%;
+        }
+
+        .patch-5 {
+            background: rgba(139, 0, 0, 0.5);
+            width: 420px;
+            height: 420px;
+            bottom: -80px;
+            right: 15%;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header.navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            background: var(--surface-glass);
+            border-bottom: 1px solid var(--border-hairline);
+            padding: 20px 0;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: -0.02em;
+            color: var(--text-title);
+            text-decoration: none;
+        }
+
+        .nav-back {
+            color: var(--ocean-blue);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-back:hover {
+            color: var(--ocean-blue-hover);
+        }
+
+        .hero-section {
+            padding: 100px 0 60px 0;
+            max-width: 780px;
+        }
+
+        .hero-title {
+            font-size: 3.4rem;
+            font-weight: 600;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+            color: var(--text-title);
+            margin: 0 0 24px 0;
+            overflow: hidden;
+        }
+
+        .hero-title .char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(40px);
+            animation: titleReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes titleReveal {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-title .space {
+            display: inline-block;
+            width: 0.3em;
+        }
+
+        .hero-text {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            margin: 0;
+            max-width: 680px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 48px;
+            margin-top: 32px;
+            padding-bottom: 40px;
+        }
+
+        .section-block {
+            margin-bottom: 56px;
+        }
+
+        .block-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            margin: 0 0 16px 0;
+            color: var(--text-title);
+        }
+
+        .block-body {
+            color: var(--text-body);
+            font-size: 1rem;
+            margin: 0;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .block-body p {
+            margin: 0 0 16px 0;
+        }
+
+        .block-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .block-body a {
+            color: var(--ocean-blue);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px dotted var(--ocean-blue);
+        }
+
+        .block-body a:hover {
+            color: var(--ocean-blue-hover);
+            border-bottom-color: var(--ocean-blue-hover);
+        }
+
+        .highlight-box {
+            background: var(--surface-card);
+            border: 1px solid var(--border-hairline);
+            border-radius: 16px;
+            padding: 28px;
+            margin-top: 20px;
+        }
+
+        .highlight-box .block-title {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box .block-body {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .tag-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .tag-item {
+            font-size: 0.95rem;
+            color: var(--text-body);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-hairline);
+            font-weight: 400;
+        }
+
+        .link-action {
+            display: inline-flex;
+            align-items: center;
+            color: var(--ocean-blue);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            margin-top: 16px;
+            gap: 8px;
+        }
+
+        .link-action:hover {
+            color: var(--ocean-blue-hover);
+        }
+
+        .link-action i {
+            font-size: 0.85rem;
+        }
+
+        .cta-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border-hairline);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 48px;
+            margin-bottom: 40px;
+        }
+
+        .cta-card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0 0 12px 0;
+            color: var(--text-title);
+        }
+
+        .cta-card p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--ocean-blue);
+            color: #fff;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: background 0.3s var(--apple-ease), transform 0.3s var(--apple-ease);
+        }
+
+        .cta-button:hover {
+            background: var(--ocean-blue-hover);
+            transform: scale(1.02);
+        }
+
+        .cta-button img {
+            width: 18px;
+            height: 18px;
+            filter: brightness(0) invert(1);
+        }
+
+        .cta-row {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .cta-button.secondary {
+            background: transparent;
+            color: var(--ocean-blue);
+            border: 1px solid var(--border-hairline);
+        }
+
+        .cta-button.secondary:hover {
+            background: var(--ocean-tint);
+            border-color: var(--border-focus);
+        }
+
+        .cta-button.secondary img {
+            filter: none;
+        }
+
+        footer {
+            margin-top: 80px;
+            padding: 40px 0;
+            border-top: 1px solid var(--border-hairline);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            gap: 16px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .footer-flex a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-flex a:hover {
+            color: var(--ocean-blue);
+        }
+
+        .footer-icon {
+            font-size: 1rem;
+            vertical-align: middle;
+        }
+
+        .hf-logo {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border-hairline);
+            margin: 48px 0;
+            border: none;
+        }
+
+        .roadmap-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .roadmap-item {
+            border-bottom: 1px solid var(--border-hairline);
+            padding: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .roadmap-item:last-child {
+            border-bottom: none;
+        }
+
+        .roadmap-name {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--text-title);
+        }
+
+        .roadmap-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .thanks-section {
+            margin-top: 64px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-hairline);
+        }
+
+        .thanks-section .block-body {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .content-layout { grid-template-columns: 1fr; gap: 32px; }
+            .hero-title { font-size: 2.4rem; }
+            .container { padding: 0 20px; }
+            .cta-card { padding: 28px; }
+            .cta-row { flex-direction: column; }
+            .footer-flex {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .footer-links {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+
+    <div class="ambient-glow">
+        <div class="blur-patch patch-1"></div>
+        <div class="blur-patch patch-2"></div>
+        <div class="blur-patch patch-3"></div>
+        <div class="blur-patch patch-4"></div>
+        <div class="blur-patch patch-5"></div>
+    </div>
+
+    <header class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="brand-title">Sleeping AI</a>
+            <a href="index.html" class="nav-back">
+                <i class="fa-solid fa-arrow-left"></i> Index
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero-section">
+            <h1 class="hero-title" id="shadow-title">Project Shadow.</h1>
+            <p class="hero-text">
+                A standalone initiative to release a snapshot of Russian culture and the internet for training state-of-the-art models.
+            </p>
+        </section>
+
+        <div class="content-layout">
+            <div class="main-column">
+                <div class="section-block reveal">
+                    <h2 class="block-title">How We Were Inspired</h2>
+                    <div class="block-body">
+                        <p>
+                            We looked at <a href="https://kandinskylab.ai/" target="_blank" rel="noopener noreferrer">Kandinsky Lab</a> — encoding Russian culture inside the dataset matrix. LAION and alike datasets have leaned on scale and diversity without taking into account factors that actually matter.
+                        </p>
+                        <p>
+                            What is the model being trained on? Does it reflect the culture it is being deployed on? How prominent are non-cultural, religious, and sentimental values beyond the expansion of porn and explicit content?
+                        </p>
+                        <p>
+                            We started Shadow to tackle all these questions and incorporate a swap-in, swap-out mechanism for datasets — where simply taking the dataset should be considered enough for training a large-scale model.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="section-block reveal">
+                    <h2 class="block-title">What Parts of the Internet We Open-Source</h2>
+                    <div class="block-body">
+                        <p>
+                            Russian and Eastern European Internet. We provide data that is already public, plus metadata.
+                        </p>
+                        <p>
+                            Unlike LAION-BVD and similar datasets where data is locally downloaded and shared with researchers, we open-source critical infrastructure written by our team and push the burden of training — and doing anything with the data — onto the researchers. Based on exemptions and nature, each individual case is different.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="section-block reveal">
+                    <h2 class="block-title">What We Plan to Release</h2>
+                    <ul class="roadmap-list">
+                        <li class="roadmap-item">
+                            <span class="roadmap-name">Sleeping-RVD</span>
+                            <span class="roadmap-status">Sleeping-Russian Video Dataset</span>
+                        </li>
+                        <li class="roadmap-item">
+                            <span class="roadmap-name">Accent1</span>
+                            <span class="roadmap-status">Large-scale synthetic accent generator and dataset</span>
+                        </li>
+                    </ul>
+                    <div class="block-body" style="margin-top: 16px;">
+                        <p>
+                            Whilst these two are the biggest releases, we will release more data and individual projects and code under Project Shadow.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="section-block reveal">
+                    <h2 class="block-title">How We Collected the Data</h2>
+                    <div class="block-body">
+                        <p>
+                            We never used any credentials or logins to access this data. What is being shown is all public internet product.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="section-block reveal">
+                    <h2 class="block-title">Do We Release Code?</h2>
+                    <div class="block-body">
+                        <p>
+                            Actually, no. We feel a responsibility where folks do not abuse our methods for doing malicious things. Research is fine, and we are releasing data. Anything else is off the charts.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="thanks-section reveal">
+                    <h2 class="block-title">Thanks</h2>
+                    <div class="block-body">
+                        <p>We thank all our friends and community for helping us.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-column">
+                <div class="section-block reveal">
+                    <h2 class="block-title">At a Glance</h2>
+                    <div class="tag-grid">
+                        <div class="tag-item">Language: Russian</div>
+                        <div class="tag-item">Access: Public web only</div>
+                        <div class="tag-item">Code: Not released</div>
+                        <div class="tag-item">License: Open research</div>
+                        <div class="tag-item">Format: HuggingFace Dataset</div>
+                    </div>
+                </div>
+
+                <div class="section-block reveal">
+                    <h2 class="block-title">Find the Data</h2>
+                    <div class="block-body">
+                        <p>
+                            All Project Shadow datasets are published on our Hugging Face organisation.
+                        </p>
+                        <a href="https://huggingface.co/teamsleeping" target="_blank" rel="noopener noreferrer" class="link-action">
+                            <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"> Hugging Face
+                        </a>
+                        <br>
+                        <a href="https://github.com/team-sleeping" target="_blank" rel="noopener noreferrer" class="link-action">
+                            <i class="fa-brands fa-github"></i> GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-card reveal">
+            <h2>Find the Datasets</h2>
+            <p>Project Shadow releases live on Hugging Face. Explore the data, build with it, and push the frontier of culturally grounded AI.</p>
+            <div class="cta-row">
+                <a href="https://huggingface.co/teamsleeping" target="_blank" rel="noopener noreferrer" class="cta-button">
+                    <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face">
+                    Hugging Face
+                </a>
+                <a href="https://github.com/team-sleeping" target="_blank" rel="noopener noreferrer" class="cta-button secondary">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container footer-flex">
+            <div>Made by Sleeping AI</div>
+            <div class="footer-links">
+                <a href="mailto:media@sleeping-ai.com">media@sleeping-ai.com</a>
+                <a href="https://x.com/teamsleepingai" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-brands fa-x-twitter footer-icon"></i> Twitter
+                </a>
+                <a href="https://github.com/team-sleeping" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-brands fa-github footer-icon"></i> GitHub
+                </a>
+                <a href="https://huggingface.co/teamsleeping" target="_blank" rel="noopener noreferrer">
+                    <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face" class="hf-logo"> Hugging Face
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const title = document.getElementById('shadow-title');
+            const text = title.textContent;
+            title.innerHTML = '';
+
+            let delay = 0;
+            for (let i = 0; i < text.length; i++) {
+                const span = document.createElement('span');
+                if (text[i] === ' ') {
+                    span.className = 'space';
+                } else {
+                    span.className = 'char';
+                    span.style.animationDelay = (delay * 0.04) + 's';
+                    delay++;
+                }
+                span.textContent = text[i];
+                title.appendChild(span);
+            }
+
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        });
+    </script>
+</body>
+</html>
